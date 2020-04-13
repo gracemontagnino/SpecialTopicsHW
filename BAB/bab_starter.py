@@ -79,8 +79,27 @@ class BBTreeNode():
         bestres = -1e20 # a small arbitrary initial best objective value
         bestnode_vars = root.vars # initialize bestnode_vars to the root vars
 
-        #TODO: fill this part in
+        while (len(heap)>0):
+            _,_,root=hq.heappop(heap)
+            for vari in root.vars:
+                if vari.value == None or abs(round(vari.value) - float(vari.value)) > 1e-4:
+                    ceil=root.branch_ceil(vari)
+                    floor=root.branch_floor(vari)
+                    ceil.prob.solve(solver='cvxopt')
+                    floor.prob.solve(solver='cvxopt')
+                    hq.heappush(heap,(ceil.vars[-1], next(counter), ceil))
+                    hq.heappush(heap,(floor.vars[-1], next(counter), floor))
+                    if ceil.is_integral()==False:
+                        if ceil.vars[-1]>bestres:
+                            bestres=ceil.vars[-1]
+                            bestnode_vars=ceil.vars
+                    if floor.is_integral()==False:
+                        if floor.vars[-1]>bestres:
+                            bestres=floor.vars[-1]
+                            bestnode_vars=floor.vars
+                    break
 
+        return bestres, bestnode_vars
         
         return bestres, bestnode_vars
  
