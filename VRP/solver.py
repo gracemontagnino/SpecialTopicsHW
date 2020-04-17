@@ -22,38 +22,54 @@ def cvrp_ip(C,q,K,Q,obj=True):
         objective_value: value of the minimum travel cost
         x: matrix representing number of routes that use each arc
     '''
-    # TODO: add in destination node (same distances as source & demand = 0)
+    q=np.append(q,0)
+    new_row = [C[0][:]]
+    C=np.concatenate((C,new_row))
+    rowl=len(C)
+    rowli=rowl-1
+    newcol=np.zeros((rowl,1))
+    C=np.concatenate((C,newcol),axis=1)
+    new_col = C[:,0]
+    C[:,rowli]=new_col
 
-    # set up the picos problem
     prob = pic.Problem()
-
-    # TODO: add variables, constraints, and objective function!
-
     x = []
+    u=[]
+    x=prob.add_variable("x",size=(rowl,rowl),vtype='binary')
+    u=prob.add_variable("u",size=(rowl),vtype='continuous',upper=Q, lower=q)
     objective_value = 0
-
+    prob.add_constraint(sum([x[0,i]for i in range (0,rowl)])<=K)
+    prob.add_constraint(sum([x[i, rowl-1]for i in range (0,rowl)])<=K)
+    prob.add_constraint(sum([x[0,i]for i in range (0,rowl)])==sum([x[i, rowl-1]for i in range (0,rowl)]))
+    prob.add_list_of_constraints([sum([x[i,j]for i in range (0,rowl)]) ==1 for j in range (1,rowl-1)])
+    prob.add_list_of_constraints([sum([x[j,i]for i in range (0,rowl)]) ==1 for j in range (1,rowl-1)])
+    prob.add_constraint(sum([x[i,0]for i in range (0,rowl)])==0)
+    prob.add_list_of_constraints([u[i]-u[j]+Q*x[i,j] <= Q-q[i] for i in range (0,rowl) for j in range (0,rowl)])
+    prob.set_objective("min",pic.sum([C[i,j]*x[i,j] for i in range(0,rowl) for j in range(0,rowl)]))
+    prob.solve(solver='cplex')
+    objective_value=prob.obj_value()
     return objective_value, x
 
 # Local search approach (OPTIONAL)
-def local_search(C,q,K,Q):
-    '''
-    Solves the capacitated vehicle routing problem using a local search
-    approach.
-
-    C: matrix of edge costs, that represent distances between each node
-    q: list of demands associated with each client node
-    K: number of vehicles
-    Q: capacity of each vehicle
-    returns:
-        bestval: value of the minimum travel cost
-        bestx: matrix representing number of routes that use each arc
-    '''
-    bestx = []
-    bestval = 0
-
-    # TODO (OPTIONAL): implement local search to solve vehicle routing problem
-
-    return bestval, bestx
+# def local_search(C,q,K,Q):
+#     '''
+#     Solves the capacitated vehicle routing problem using a local search
+#     approach.
+#
+#     C: matrix of edge costs, that represent distances between each node
+#     q: list of demands associated with each client node
+#     K: number of vehicles
+#     Q: capacity of each vehicle
+#     returns:
+#         bestval: value of the minimum travel cost
+#         bestx: matrix representing number of routes that use each arc
+#     '''
+#     bestx = []
+#     bestval = 0
+#
+#     # TODO (OPTIONAL): implement local search to solve vehicle routing problem
+#
+#     return bestval, bestx
 
 
 if __name__ == "__main__":
